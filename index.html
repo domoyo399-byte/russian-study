@@ -2,21 +2,24 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>俄语单词自修室</title>
-    <!-- 仅保留 React 运行所需的国内高速源 -->
+    <!-- 引入国内稳定的 React 基础库 -->
     <script src="https://cdn.staticfile.org/react/18.2.0/umd/react.production.min.js"></script>
     <script src="https://cdn.staticfile.org/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdn.staticfile.org/babel-standalone/7.22.20/babel.min.js"></script>
-    <script src="https://cdn.staticfile.org/lucide/0.263.1/umd/lucide.min.js"></script>
+    
+    <!-- 内置 Tailwind 基础样式 -->
+    <link href="https://cdn.staticfile.org/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
 
     <style>
-        /* --- 核心样式表 (内置于文件，断网也能显示漂亮界面) --- */
+        /* --- 核心样式表 --- */
         :root {
             --bg-color: #F7F5F0;
-            --text-main: #3A3F3A;
+            --text-main: #2C332C;
             --text-sub: #9CA3AF;
-            --primary-green: #8A9675;
+            --primary-green: #7A8665;
+            --deep-green: #3F4A2C; /* 更加深的绿色，用于强调重音 */
             --primary-clay: #BC8A7B;
             --soft-white: #ECEBE5;
             --white: #FFFFFF;
@@ -30,9 +33,11 @@
             margin: 0;
             padding: 20px;
             -webkit-font-smoothing: antialiased;
+            -webkit-text-size-adjust: 100%;
         }
 
-        /* 布局容器 */
+        .cn-font { font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+
         .app-wrapper {
             max-width: 800px;
             margin: 0 auto;
@@ -43,166 +48,131 @@
         }
 
         /* 顶部导航 */
-        .header {
-            width: 100%;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            gap: 15px;
-        }
-
+        .header { width: 100%; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; }
         .brand { display: flex; align-items: center; gap: 12px; }
-        
-        .logo {
-            background-color: var(--primary-green);
-            color: white;
-            padding: 10px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 0 5px var(--soft-white);
-        }
+        .logo { background-color: var(--primary-green); color: white; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 4px var(--soft-white); }
+        .title h1 { font-size: 1.2rem; font-weight: bold; margin: 0; }
+        .title p { font-size: 0.65rem; color: var(--primary-green); font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 2px 0 0 0; }
 
-        .title h1 { font-size: 1.3rem; font-weight: bold; margin: 0; }
-        .title p { font-size: 0.75rem; color: var(--primary-green); font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin: 2px 0 0 0; }
-
-        /* 模式切换按钮 */
-        .btn-group {
-            background-color: var(--soft-white);
-            padding: 5px;
-            border-radius: 12px;
-            display: flex; gap: 5px;
-        }
-
-        .btn {
-            border: none; background: transparent; padding: 8px 16px; border-radius: 8px;
-            font-size: 0.85rem; font-weight: bold; color: #888; cursor: pointer; transition: all 0.2s;
-        }
+        /* 按钮 */
+        .btn-group { background-color: var(--soft-white); padding: 4px; border-radius: 12px; display: flex; gap: 4px; }
+        .btn { border: none; background: transparent; padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; color: #888; cursor: pointer; transition: all 0.2s; }
         .btn.active { background-color: var(--white); color: var(--primary-green); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
         /* 课程导航 */
-        .lesson-nav {
-            display: flex; gap: 10px; overflow-x: auto; width: 100%; padding-bottom: 10px;
-            justify-content: center; margin-bottom: 20px;
-        }
-        /* 隐藏滚动条 */
+        .lesson-nav { display: flex; gap: 8px; overflow-x: auto; width: 100%; padding-bottom: 5px; justify-content: center; margin-bottom: 20px; }
         .lesson-nav::-webkit-scrollbar { display: none; }
-
-        .lesson-btn {
-            min-width: 50px; height: 40px; border: 2px solid var(--border-color); background: var(--white);
-            border-radius: 10px; font-weight: bold; color: var(--text-sub); cursor: pointer;
-            display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
-        }
+        .lesson-btn { min-width: 45px; height: 36px; border: 2px solid var(--border-color); background: var(--white); border-radius: 10px; font-weight: bold; color: var(--text-sub); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; flex-shrink: 0; }
         .lesson-btn.active { background-color: var(--primary-green); color: var(--white); border-color: var(--primary-green); }
 
-        /* 闪卡容器 */
-        .card-container {
-            width: 100%; max-width: 400px; aspect-ratio: 3/4; position: relative;
-            perspective: 2000px; margin-bottom: 20px; cursor: pointer;
-        }
+        /* 闪卡容器 - 强制尺寸一致 */
+        .card-container { width: 100%; max-width: 340px; aspect-ratio: 3/4; position: relative; perspective: 2000px; margin-bottom: 20px; cursor: pointer; user-select: none; -webkit-user-select: none; }
         @media (min-width: 600px) { .card-container { aspect-ratio: 16/10; max-width: 600px; } }
-
-        .card-inner {
-            position: relative; width: 100%; height: 100%; text-align: center;
-            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-            transform-style: preserve-3d;
-        }
+        
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); transform-style: preserve-3d; }
         .card-inner.flipped { transform: rotateY(180deg); }
+        
+        /* 强制正反面绝对定位撑满容器 */
+        .card-face { position: absolute; top: 0; left: 0; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(0,0,0,0.06); padding: 20px; box-sizing: border-box; overflow: hidden; background-color: var(--white); }
+        .card-front { border: 1px solid var(--soft-white); z-index: 2; }
+        .card-back { background-color: var(--primary-green); color: var(--white); transform: rotateY(180deg); z-index: 1; border: 6px solid rgba(255,255,255,0.15); }
 
-        .card-face {
-            position: absolute; width: 100%; height: 100%;
-            backface-visibility: hidden; -webkit-backface-visibility: hidden;
-            border-radius: 30px; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 20px; box-sizing: border-box;
-        }
-
-        .card-front { background-color: var(--white); border: 1px solid var(--soft-white); z-index: 2; }
-        .card-back {
-            background-color: var(--primary-green); color: var(--white);
-            transform: rotateY(180deg); z-index: 1; border: 8px solid rgba(255,255,255,0.2);
-        }
-
-        /* 单词显示 */
-        .char-container { display: inline-block; position: relative; padding: 0 2px; }
-        .char { font-weight: bold; transition: color 0.3s; }
+        /* 单词排版 */
+        .word-display { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; line-height: 1; }
+        .char-container { display: inline-block; position: relative; padding: 0; margin: 0; }
+        .char { font-weight: bold; transition: color 0.3s; display: inline-block; }
         .char.root { color: var(--primary-clay); }
         
+        /* --- 重音符号核心优化 --- */
         .stress-mark {
-            position: absolute; left: 50%; transform: translateX(-50%);
-            font-family: Arial, sans-serif; font-weight: 900; pointer-events: none; line-height: 1;
+            position: absolute;
+            left: 50%;
+            /* 向左平移以对齐元音视觉中心 */
+            transform: translateX(-35%); 
+            font-family: Arial, sans-serif; 
+            font-weight: 900;
+            pointer-events: none;
+            line-height: 1;
+            width: 0; height: 0; overflow: visible;
+            display: flex; justify-content: center; align-items: flex-end;
+            z-index: 10;
         }
 
-        .text-lg .char { font-size: 3rem; }
-        .text-lg .stress-mark { top: 0.05em; font-size: 0.5em; color: var(--primary-green); }
-        .text-md .char { font-size: 1.5rem; }
-        .text-md .stress-mark { top: 0.05em; font-size: 0.6em; color: var(--primary-green); }
-        .text-white .char, .text-white .stress-mark { color: white !important; }
+        /* 【重点调整】闪卡正面大字模式：重音特大、特明显、特近 */
+        .text-lg .char { font-size: 3.2rem; }
+        .text-lg .stress-mark { 
+            top: 0.22em;  /* 极大下沉，贴近字母 */
+            font-size: 0.85em; /* 极大字号 */
+            color: var(--deep-green); /* 深绿色 */
+            text-shadow: 0.5px 0 0 var(--deep-green); /* 加粗描边 */
+        }
 
-        @media (min-width: 600px) { .text-lg .char { font-size: 4rem; } }
-
-        /* 背面内容 */
-        .back-content { width: 100%; height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .back-content::-webkit-scrollbar { display: none; }
-        .cn-mean { font-family: system-ui, sans-serif; font-size: 2rem; font-weight: bold; margin-bottom: 20px; }
+        /* 变位小字模式 - 恢复为普通大小 */
+        .text-md .char { font-size: 1.4rem; }
+        .text-md .stress-mark { 
+            top: 0.15em; 
+            font-size: 0.6em; /* 恢复正常大小 */
+            color: white; 
+            text-shadow: 0.5px 0 0 white;
+        }
         
-        .info-card {
-            background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 15px; padding: 15px; width: 100%; max-width: 350px; margin-bottom: 10px;
-        }
-        .info-label { font-size: 0.65rem; text-transform: uppercase; opacity: 0.8; letter-spacing: 1px; font-weight: bold; margin-bottom: 5px; }
+        /* 变位正面显示的颜色 */
+        .conj-front .stress-mark { color: var(--primary-green) !important; text-shadow: 0.5px 0 0 var(--primary-green) !important; font-size: 0.7em; top: 0.1em; }
+        .conj-back .stress-mark { color: white !important; text-shadow: 0.5px 0 0 white !important; font-size: 0.6em; }
 
-        /* 进度条 */
-        .slider-container { width: 100%; max-width: 400px; margin-top: 20px; text-align: center; }
-        .slider { -webkit-appearance: none; width: 100%; height: 6px; background: var(--border-color); border-radius: 3px; outline: none; }
-        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%; background: var(--primary-green); cursor: pointer; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .text-white .char { color: white !important; }
+        .text-white .stress-mark { color: white !important; text-shadow: 0.5px 0 0 white !important; }
 
-        /* 游戏面板 */
-        .game-panel {
-            background: var(--white); border-radius: 30px; padding: 30px; width: 100%;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05); border: 1px solid var(--soft-white);
-        }
+        @media (max-width: 600px) { .text-lg .char { font-size: 2.8rem; } }
+
+        /* 底部控制栏 */
+        .controls { width: 100%; max-width: 340px; display: flex; align-items: center; gap: 10px; margin-top: 15px; }
+        .nav-btn { background: white; border: 1px solid var(--border-color); width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary-green); cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); flex-shrink: 0; }
+        .nav-btn:active { transform: scale(0.95); background: var(--soft-white); }
+        .slider-container { flex: 1; text-align: center; }
+        .slider { -webkit-appearance: none; width: 100%; height: 5px; background: var(--border-color); border-radius: 3px; outline: none; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--primary-green); cursor: pointer; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .progress-text { font-size: 0.9rem; font-weight: bold; color: var(--text-main); margin-top: 5px; font-family: "Times New Roman", serif; }
+
+        /* 其他辅助样式 */
+        .back-content { width: 100%; height: 100%; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .cn-mean { font-family: system-ui, sans-serif; font-size: 1.8rem; font-weight: bold; margin-bottom: 15px; text-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .info-card { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); border-radius: 12px; padding: 12px; width: 100%; max-width: 320px; margin-bottom: 8px; }
+        .info-label { font-size: 0.6rem; text-transform: uppercase; opacity: 0.8; letter-spacing: 1px; font-weight: bold; margin-bottom: 4px; }
+        .game-panel { background: var(--white); border-radius: 24px; padding: 20px; width: 100%; box-shadow: 0 5px 15px rgba(0,0,0,0.03); border: 1px solid var(--soft-white); }
         .game-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        @media (min-width: 600px) { .game-grid { grid-template-columns: 1fr 1fr 1fr; gap: 15px; } }
-
-        .game-btn {
-            background: var(--white); border: 2px solid var(--soft-white); border-radius: 15px;
-            padding: 10px; height: 100px; display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; font-weight: bold; color: var(--text-main); cursor: pointer; transition: all 0.2s;
-        }
+        .game-btn { background: var(--white); border: 2px solid var(--soft-white); border-radius: 12px; padding: 8px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: bold; color: var(--text-main); cursor: pointer; transition: all 0.2s; }
         .game-btn.selected { background: var(--primary-green); color: var(--white); border-color: var(--primary-green); transform: translateY(-2px); }
         .game-btn.solved { opacity: 0.3; cursor: default; background: #f0f0f0; }
-
-        .quiz-option {
-            height: 70px; border-radius: 15px; border: 2px solid var(--soft-white); background: white;
-            font-size: 1rem; font-weight: bold; cursor: pointer; color: var(--text-main);
-        }
+        .quiz-option { height: 60px; border-radius: 12px; border: 2px solid var(--soft-white); background: white; font-size: 1rem; font-weight: bold; cursor: pointer; color: var(--text-main); }
         .quiz-option.correct { background: var(--primary-green); color: white; border-color: var(--primary-green); }
         .quiz-option.wrong { opacity: 0.5; border-color: var(--primary-clay); color: var(--primary-clay); }
-        
-        .cn-font { font-family: system-ui, -apple-system, sans-serif; }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo, useCallback } = React;
+        const { useState, useEffect, useMemo, useCallback, useRef } = React;
 
-        const Icon = ({ name, size = 20, color = 'currentColor' }) => {
-            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
-            return <i data-lucide={name} style={{ width: size, height: size, color: color, verticalAlign: 'middle', display:'inline-block' }}></i>;
+        // 内置 SVG 图标
+        const Icons = {
+            BookOpen: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+            Layers: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+            RefreshCw: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>,
+            ChevronLeft: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>,
+            ChevronRight: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+            Check: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+            Award: () => <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
         };
 
-        // --- 完整校对词库 (修复所有缺失关联词) ---
         const vocabulary = [
-          // 第一课
+          // Lesson 1
           { ru: 'дневник', stressIdx: 5, root: 'днев', cn: '日记', lesson: 1, related: 'день (天), дневно́й (白天的)' },
           { ru: 'завтрак', stressIdx: 1, root: 'завтр', cn: '早饭', lesson: 1, related: 'за́втра (明天)' },
           { ru: 'кружок', stressIdx: 4, root: 'круж', cn: '小组', lesson: 1, related: 'круг (圆)' },
-          { ru: 'математика', stressIdx: 5, root: 'математ', cn: '数学', lesson: 1, related: 'математи́ческий (数学的)' },
-          { ru: 'соревнование', stressIdx: 8, root: 'ревн', cn: '比赛', lesson: 1, related: 'ревни́вый (嫉妒的/竞争的)' },
+          { ru: 'математика', stressIdx: 5, root: 'математ', cn: '数学', lesson: 1, related: 'математи́ческий' },
+          { ru: 'соревнование', stressIdx: 8, root: 'ревн', cn: '比赛', lesson: 1, related: 'ревни́вый (竞争)' },
           { ru: 'столовая', stressIdx: 4, root: 'стол', cn: '食堂', lesson: 1, related: 'стол (桌子), насто́льный (桌上的)' },
           { ru: 'ужин', stressIdx: 0, root: 'уж', cn: '晚饭', lesson: 1, related: 'у́жинать (吃晚饭)' },
           { ru: 'хоккей', stressIdx: 4, root: 'хокке', cn: '冰球', lesson: 1, related: 'хоккеи́ст (冰球运动员)' },
@@ -225,7 +195,7 @@
           { ru: 'помнить', stressIdx: 1, root: 'помн', cn: '记得', lesson: 1, related: 'па́мять (记忆)', grammar: { type: '未完成体', perfective: '-', conj: '-ню, -нишь, -нят' } },
           { ru: 'танцевать', stressIdx: 6, root: 'танц', cn: '跳舞', lesson: 1, related: 'та́нец (舞蹈)', grammar: { type: '未完成体', perfective: 'станцева́ть', conj: 'танцу́ю, -цу́ешь' } },
 
-          // Lesson 2 (已修复 Related 字段)
+          // Lesson 2
           { ru: 'год', stressIdx: -1, root: 'год', cn: '年', lesson: 2, related: 'годово́й (年度的)' },
           { ru: 'жизнь', stressIdx: 1, root: 'жи', cn: '生活', lesson: 2, related: 'жить (生活/居住)' },
           { ru: 'месяц', stressIdx: 1, root: 'мес', cn: '月', lesson: 2, related: 'ежеме́сячно (每月)' },
@@ -234,7 +204,7 @@
           { ru: 'половина', stressIdx: 5, root: 'пол', cn: '一半', lesson: 2, related: 'полчаса́ (半小时)' },
           { ru: 'полчаса', stressIdx: 6, root: 'пол', cn: '半小时', lesson: 2, related: 'полови́на (一半)' },
           { ru: 'роман', stressIdx: 3, root: 'роман', cn: '小说', lesson: 2, related: 'романи́ст (小说家)' },
-          { ru: 'университет', stressIdx: 10, root: 'универ', cn: '大学', lesson: 2, related: 'универса́льный (通用的)' },
+          { ru: 'университет', stressIdx: 9, root: 'универ', cn: '大学', lesson: 2, related: 'универса́льный (通用的)' },
           { ru: 'час', stressIdx: 1, root: 'час', cn: '小时', lesson: 2, related: 'часы́ (表)' },
           { ru: 'длинный', stressIdx: 2, root: 'длин', cn: '长的', lesson: 2, related: 'длина́ (长度)' },
           { ru: 'долгий', stressIdx: 1, root: 'долг', cn: '长久的', lesson: 2, related: 'до́лго (很久)' },
@@ -245,24 +215,24 @@
           { ru: 'почти', stressIdx: 4, root: 'почт', cn: '几乎', lesson: 2, related: 'почти́тельный (恭敬的)' },
           { ru: 'всё', stressIdx: -1, root: 'вс', cn: '一切', lesson: 2, related: 'весь (全部)' },
           { ru: 'заниматься', stressIdx: 5, root: 'ним', cn: '学习', lesson: 2, related: 'заня́тие (课)', grammar: { type: '未完成体', perfective: 'заня́ться', conj: '-а́юсь, -а́ешься' } },
-          { ru: 'проверять', stressIdx: 7, root: 'вер', cn: '检查', lesson: 2, related: 'прове́рка (核实)', grammar: { type: '未完成体', perfective: 'прове́рить', conj: '-я́ю, -я́ешь' } },
-          { ru: 'решать', stressIdx: 4, root: 'реш', cn: '解决', lesson: 2, related: 'реше́ние (决定)', grammar: { type: '未完成体', perfective: 'реши́ть (-шу́)', conj: '-а́ю, -а́ешь' } },
-          { ru: 'строить', stressIdx: 2, root: 'стро', cn: '建设', lesson: 2, related: 'стро́йка (工地)', grammar: { type: '未完成体', perfective: 'постро́ить', conj: '-о́ю, -о́ишь' } },
-          { ru: 'уставать', stressIdx: 6, root: 'ста', cn: '疲劳', lesson: 2, related: 'уста́лость (疲劳)', grammar: { type: '未完成体', perfective: 'уста́ть (-а́ну)', conj: 'устаю́, -аёшь' } },
-          { ru: 'хотеть', stressIdx: 4, root: 'хот', cn: '想要', lesson: 2, related: 'хоте́ние (意愿)', grammar: { type: '未完成体', perfective: 'захоте́ть', conj: 'хочу́, хо́чешь' } },
+          { ru: 'проверять', stressIdx: 6, root: 'вер', cn: '检查', lesson: 2, related: 'прове́рка (核实)', grammar: { type: '未完成体', perfective: 'прове́рить', conj: '-я́ю, -я́ешь' } },
+          { ru: 'решать', stressIdx: 4, root: 'реш', cn: '解决', lesson: 2, related: '答', grammar: { type: '未完成体', perfective: 'реши́ть (-шу́)', conj: '-а́ю, -а́ешь' } },
+          { ru: 'строить', stressIdx: 3, root: 'стро', cn: '建设', lesson: 2, related: '建造', grammar: { type: '未完成体', perfective: 'постро́ить', conj: '-о́ю, -о́ишь' } },
+          { ru: 'уставать', stressIdx: 6, root: 'ста', cn: '疲劳', lesson: 2, related: '累', grammar: { type: '未完成体', perfective: 'уста́ть (-а́ну)', conj: 'устаю́, -аёшь' } },
+          { ru: 'хотеть', stressIdx: 4, root: 'хот', cn: '想要', lesson: 2, related: '愿望', grammar: { type: '未完成体', perfective: 'захоте́ть', conj: 'хочу́, хо́чешь' } },
 
-          // Lesson 3 (已修复 Related 字段)
+          // Lesson 3
           { ru: 'весна', stressIdx: 4, root: 'весн', cn: '春天', lesson: 3, related: 'весе́нний (春天的)' },
           { ru: 'зима', stressIdx: 3, root: 'зим', cn: '冬天', lesson: 3, related: 'зи́мний (冬天的)' },
           { ru: 'каникулы', stressIdx: 3, root: 'каник', cn: '假期', lesson: 3, related: 'каникуля́рный (假期的)' },
           { ru: 'лето', stressIdx: 1, root: 'лет', cn: '夏天', lesson: 3, related: 'ле́тний (夏天的)' },
-          { ru: 'осень', stressIdx: 1, root: 'осень', cn: '秋天', lesson: 3, related: 'осе́нний (秋天的)' },
+          { ru: 'осень', stressIdx: 0, root: 'осень', cn: '秋天', lesson: 3, related: 'осе́нний (秋天的)' },
           { ru: 'физика', stressIdx: 1, root: 'физ', cn: '物理', lesson: 3, related: 'фи́зик (物理学家)' },
           { ru: 'понедельник', stressIdx: 5, root: 'недель', cn: '周一', lesson: 3, related: 'неде́ля (星期)' },
           { ru: 'вторник', stressIdx: 2, root: 'втор', cn: '周二', lesson: 3, related: 'второ́й (第二)' },
           { ru: 'среда', stressIdx: 4, root: 'сред', cn: '周三', lesson: 3, related: 'сре́дний (中间的)' },
-          { ru: 'четверг', stressIdx: 6, root: 'четвер', cn: '周四', lesson: 3, related: 'четвёртый (第四)' },
-          { ru: 'пятница', stressIdx: 2, root: 'пят', cn: '周五', lesson: 3, related: 'пя́тый (第五)' },
+          { ru: 'четверг', stressIdx: 5, root: 'четвер', cn: '周四', lesson: 3, related: 'четвёртый (第四)' },
+          { ru: 'пятница', stressIdx: 1, root: 'пят', cn: '周五', lesson: 3, related: 'пя́тый (第五)' },
           { ru: 'суббота', stressIdx: 4, root: 'суббот', cn: '周六', lesson: 3, related: 'суббо́тний (周六的)' },
           { ru: 'воскресенье', stressIdx: 8, root: 'воскрес', cn: '周日', lesson: 3, related: 'воскреса́ть (复活)' },
           { ru: 'весной', stressIdx: 4, root: 'весн', cn: '(在)春天', lesson: 3, related: 'весна́ (春天)' },
@@ -281,7 +251,7 @@
 
         // --- 组件 ---
         
-        // 单词渲染
+        // 单词渲染 - 紧凑排版与重音修复 (Pro Max 版)
         const WordDisplay = ({ word, root, stressIdx, size = 'lg', isWhite = false }) => {
             if (!word) return null;
             return (
@@ -302,7 +272,6 @@
             );
         };
 
-        // 变位渲染
         const ConjDisplay = ({ text, isWhite = false }) => {
             if (!text) return null;
             const parts = [];
@@ -312,9 +281,9 @@
                 const isStress = text[i+1] === '\u0301' || text[i+1] === '́'; 
                 if (isStress) {
                     parts.push(
-                        <span key={i} style={{position:'relative', display:'inline-block'}}>
-                            {char}
-                            <span style={{position:'absolute', top:'0.05em', left:'50%', transform:'translateX(-50%)', fontSize:'0.6em', color: isWhite?'white':'#8A9675', fontWeight:900}}>́</span>
+                        <span key={i} className={isWhite ? "conj-back" : "conj-front"} style={{position:'relative', display:'inline-block', margin: '0 -0.01em'}}>
+                            <span style={{fontWeight:'bold'}}>{char}</span>
+                            <span className="stress-mark stress-small" style={{top: '0.05em', left:'50%', transform:'translateX(-45%)'}}>́</span>
                         </span>
                     );
                     i++; 
@@ -345,6 +314,35 @@
             const [quizStats, setQuizStats] = useState({ correct: 0, total: 0 });
             const [quizFinished, setQuizFinished] = useState(false);
 
+            // 触摸滑动处理
+            const [touchStart, setTouchStart] = useState(null);
+            const [touchEnd, setTouchEnd] = useState(null);
+            const minSwipeDistance = 50;
+
+            const onTouchStart = (e) => {
+                setTouchEnd(null);
+                setTouchStart(e.targetTouches[0].clientX);
+            };
+
+            const onTouchMove = (e) => {
+                setTouchEnd(e.targetTouches[0].clientX);
+            };
+
+            // 滑动逻辑：左滑=下一个，右滑=上一个
+            const onTouchEnd = () => {
+                if (!touchStart || !touchEnd) return;
+                const distance = touchStart - touchEnd;
+                const isLeftSwipe = distance > minSwipeDistance;
+                const isRightSwipe = distance < -minSwipeDistance;
+                
+                if (isLeftSwipe) {
+                    goNext();
+                }
+                if (isRightSwipe) {
+                    goPrev();
+                }
+            };
+
             const currentVocab = useMemo(() => {
                 const list = activeLesson === 0 ? vocabulary : vocabulary.filter(v => v.lesson === activeLesson);
                 return list.length > 0 ? list : [vocabulary[0]];
@@ -354,7 +352,18 @@
             useEffect(() => {
                 setCurrentIndex(0); setIsFlipped(false);
                 setQuizFinished(false); setQuizQueue([]); setQuizScore(0);
+                setQuizStats({ correct: 0, total: 0 });
             }, [activeLesson]);
+
+            const goNext = () => {
+                setCurrentIndex((prev) => (prev + 1) % currentVocab.length);
+                setIsFlipped(false);
+            };
+
+            const goPrev = () => {
+                setCurrentIndex((prev) => (prev - 1 + currentVocab.length) % currentVocab.length);
+                setIsFlipped(false);
+            };
 
             // Logic Init
             const initMatch = () => {
@@ -366,7 +375,7 @@
                 setMatchItems(items); setSelected([]); setSolved([]);
             };
 
-            const startQuiz = useCallback(() => {
+            const startQuizRound = useCallback(() => {
                 const queue = [...currentVocab].sort(() => 0.5 - Math.random());
                 setQuizQueue(queue); setQuizIndex(0); setQuizScore(0);
                 setQuizStats({ correct: 0, total: 0 }); setQuizFinished(false);
@@ -380,16 +389,20 @@
                 setQuizQuestion({ ...target, dir }); setQuizOptions(opts); setQuizAnswered(false);
             };
 
-            const nextQuiz = () => {
-                const next = quizIndex + 1;
-                if (next >= quizQueue.length) setQuizFinished(true);
-                else { setQuizIndex(next); generateQuestion(quizQueue[next]); }
+            const nextQuizQuestion = () => {
+                const nextIdx = quizIndex + 1;
+                if (nextIdx >= quizQueue.length) {
+                    setQuizFinished(true);
+                } else {
+                    setQuizIndex(nextIdx);
+                    generateQuestion(quizQueue[nextIdx]);
+                }
             };
 
             useEffect(() => {
                 if (mode === 'match') initMatch();
-                if (mode === 'quiz' && quizQueue.length === 0 && !quizFinished) startQuiz();
-            }, [mode, activeLesson, startQuiz]);
+                if (mode === 'quiz' && quizQueue.length === 0 && !quizFinished) startQuizRound();
+            }, [mode, activeLesson, startQuizRound, quizQueue.length, quizFinished]);
 
             const handleMatch = (item) => {
                 if (solved.includes(item.id) || selected.includes(item)) return;
@@ -407,7 +420,7 @@
                 setQuizStats(p => ({ correct: p.correct + (isCorrect ? 1 : 0), total: p.total + 1 }));
                 if (isCorrect) {
                     setQuizCorrect(true); setQuizScore(s => s + 10);
-                    setTimeout(nextQuiz, 1000);
+                    setTimeout(nextQuizQuestion, 1000);
                 } else setQuizCorrect(false);
             };
 
@@ -417,7 +430,7 @@
                 <div className="app-wrapper">
                     <header className="header">
                         <div className="brand">
-                            <div className="logo"><Icon name="book-open" size={20} /></div>
+                            <div className="logo"><Icons.BookOpen /></div>
                             <div className="title"><h1>俄语单词自修室</h1><p>Morandi Style</p></div>
                         </div>
                         <div className="btn-group">
@@ -439,19 +452,24 @@
 
                     {mode === 'flashcard' && (
                         <div style={{width:'100%', display:'flex', flexDirection:'column', alignItems:'center'}}>
-                            <div className="card-container" onClick={() => setIsFlipped(!isFlipped)}>
+                            <div className="card-container" 
+                                 onClick={() => setIsFlipped(!isFlipped)}
+                                 onTouchStart={onTouchStart}
+                                 onTouchMove={onTouchMove}
+                                 onTouchEnd={onTouchEnd}
+                            >
                                 <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
                                     <div className="card-face card-front">
-                                        <div style={{position:'absolute', top:'20px', left:'20px', color:'#8A9675', fontWeight:'bold', fontSize:'0.8rem', display:'flex', gap:'5px', alignItems:'center'}}>
-                                            <Icon name="layers" size={14} /> Lesson {currentVocab[currentIndex]?.lesson}
+                                        <div style={{position:'absolute', top:'20px', left:'20px', color:'#7A8665', fontWeight:'bold', fontSize:'0.8rem', display:'flex', gap:'5px', alignItems:'center'}}>
+                                            <Icons.Layers /> Lesson {currentVocab[currentIndex]?.lesson}
                                         </div>
                                         <WordDisplay word={currentVocab[currentIndex]?.ru} root={currentVocab[currentIndex]?.root} stressIdx={currentVocab[currentIndex]?.stressIdx} size="lg" />
                                         {currentVocab[currentIndex]?.grammar && (
-                                            <div style={{marginTop:'20px', fontSize:'1.2rem', color:'#8A9675'}}>
+                                            <div style={{marginTop:'20px', fontSize:'1.2rem', color:'#7A8665'}}>
                                                 <ConjDisplay text={currentVocab[currentIndex].grammar.conj} />
                                             </div>
                                         )}
-                                        <div style={{position:'absolute', bottom:'20px', color:'#D9D8D2', fontSize:'0.7rem', fontWeight:'bold', letterSpacing:'2px'}}>CLICK TO FLIP</div>
+                                        <div style={{position:'absolute', bottom:'20px', color:'#D9D8D2', fontSize:'0.7rem', fontWeight:'bold', letterSpacing:'2px', display:'flex', gap:'5px', alignItems:'center'}}><Icons.RefreshCw /> CLICK TO FLIP</div>
                                     </div>
                                     <div className="card-back">
                                         <div className="back-content">
@@ -479,9 +497,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div className="slider-container">
-                                <input type="range" min="0" max={currentVocab.length - 1} value={currentIndex} onChange={e => {setCurrentIndex(parseInt(e.target.value)); setIsFlipped(false);}} className="slider" />
-                                <div style={{marginTop:'10px', fontWeight:'bold', color:'#3A3F3A'}}>{currentIndex + 1} / {currentVocab.length}</div>
+                            
+                            <div className="controls">
+                                <button className="nav-btn" onClick={goPrev}><Icons.ChevronLeft /></button>
+                                <div className="slider-container">
+                                    <input type="range" min="0" max={currentVocab.length - 1} value={currentIndex} onChange={e => {setCurrentIndex(parseInt(e.target.value)); setIsFlipped(false);}} className="slider" />
+                                    <div className="progress-text">{currentIndex + 1} / {currentVocab.length}</div>
+                                </div>
+                                <button className="nav-btn" onClick={goNext}><Icons.ChevronRight /></button>
                             </div>
                         </div>
                     )}
@@ -489,13 +512,13 @@
                     {mode === 'match' && (
                         <div className="game-panel">
                             <div style={{display:'flex', justifyContent:'space-between', marginBottom:'20px', alignItems:'flex-end'}}>
-                                <div><span className="helper-text">MATCHING</span><div style={{fontSize:'1.5rem', fontWeight:'bold'}}>{solved.length} / 6</div></div>
-                                <button onClick={initMatch} style={{border:'none', background:'transparent', color:'#8A9675', cursor:'pointer'}}><Icon name="refresh-cw" size={24} /></button>
+                                <div><span className="info-label">MATCHING</span><div style={{fontSize:'1.5rem', fontWeight:'bold'}}>{solved.length} / 6</div></div>
+                                <button onClick={initMatch} style={{border:'none', background:'transparent', color:'#7A8665', cursor:'pointer'}}><Icons.RefreshCw /></button>
                             </div>
                             <div className="game-grid">
                                 {matchItems.map((item, idx) => (
                                     <button key={idx} disabled={solved.includes(item.id)} onClick={() => handleMatch(item)} className={`game-btn ${selected.includes(item) ? 'selected' : ''} ${solved.includes(item.id) ? 'solved' : ''}`}>
-                                        {solved.includes(item.id) ? <Icon name="check" /> : (item.type === 'ru' ? <WordDisplay word={item.ru} root={item.root} stressIdx={item.stressIdx} size="md" /> : <span className="cn-font">{item.cn}</span>)}
+                                        {solved.includes(item.id) ? <Icons.Check /> : (item.type === 'ru' ? <WordDisplay word={item.ru} root={item.root} stressIdx={item.stressIdx} size="md" /> : <span className="cn-font">{item.cn}</span>)}
                                     </button>
                                 ))}
                             </div>
@@ -507,8 +530,8 @@
                             {!quizFinished && quizQuestion ? (
                                 <>
                                     <div style={{display:'flex', justifyContent:'space-between', marginBottom:'30px'}}>
-                                        <div style={{textAlign:'left'}}><span style={{fontSize:'2rem', fontWeight:'bold'}}>{quizScore}</span><span className="helper-text" style={{display:'block'}}>SCORE</span></div>
-                                        <div style={{textAlign:'right', fontSize:'0.8rem', color:'#8A9675', fontWeight:'bold'}}><div>进度: {quizIndex + 1} / {quizQueue.length}</div><div>正确率: {accuracy}%</div></div>
+                                        <div style={{textAlign:'left'}}><span style={{fontSize:'2rem', fontWeight:'bold'}}>{quizScore}</span><span className="info-label" style={{display:'block'}}>SCORE</span></div>
+                                        <div style={{textAlign:'right', fontSize:'0.8rem', color:'#7A8665', fontWeight:'bold'}}><div>进度: {quizIndex + 1} / {quizQueue.length}</div><div>正确率: {accuracy}%</div></div>
                                     </div>
                                     <div style={{marginBottom:'30px', minHeight:'80px', display:'flex', alignItems:'center', justifyContent:'center'}}>
                                         {quizQuestion.dir === 'ru-cn' ? <WordDisplay word={quizQuestion.ru} root={quizQuestion.root} stressIdx={quizQuestion.stressIdx} size="lg" /> : <h2 className="cn-font" style={{fontSize:'2rem', fontWeight:'bold'}}>{quizQuestion.cn}</h2>}
@@ -525,19 +548,19 @@
                                             )
                                         })}
                                     </div>
-                                    <div style={{marginTop:'20px', height:'20px', fontWeight:'bold', color:'#8A9675'}}>
-                                        {quizAnswered && (quizCorrect ? "🎉 正确!" : <button onClick={nextQuiz} style={{background:'none', border:'none', textDecoration:'underline', color:'#BC8A7B', cursor:'pointer'}}>跳过 ➔</button>)}
+                                    <div style={{marginTop:'20px', height:'20px', fontWeight:'bold', color:'#7A8665'}}>
+                                        {quizAnswered && (quizCorrect ? "🎉 正确!" : <button onClick={nextQuizQuestion} style={{background:'none', border:'none', textDecoration:'underline', color:'#BC8A7B', cursor:'pointer'}}>跳过 ➔</button>)}
                                     </div>
                                 </>
                             ) : (
                                 <div>
-                                    <Icon name="award" size={60} color="#8A9675" />
+                                    <Icons.Award />
                                     <h2 className="cn-font" style={{fontSize:'1.5rem', fontWeight:'bold', margin:'20px 0'}}>测试完成</h2>
                                     <div style={{display:'flex', justifyContent:'space-around', background:'#F7F5F0', padding:'20px', borderRadius:'15px', marginBottom:'30px'}}>
-                                        <div><span className="helper-text">Score</span><div style={{fontSize:'1.8rem', fontWeight:'bold', color:'#8A9675'}}>{quizScore}</div></div>
-                                        <div><span className="helper-text">Accuracy</span><div style={{fontSize:'1.8rem', fontWeight:'bold', color:'#8A9675'}}>{accuracy}%</div></div>
+                                        <div><span className="info-label">Score</span><div style={{fontSize:'1.8rem', fontWeight:'bold', color:'#7A8665'}}>{quizScore}</div></div>
+                                        <div><span className="info-label">Accuracy</span><div style={{fontSize:'1.8rem', fontWeight:'bold', color:'#7A8665'}}>{accuracy}%</div></div>
                                     </div>
-                                    <button onClick={startQuiz} style={{background:'#8A9675', color:'white', border:'none', padding:'12px 30px', borderRadius:'12px', fontSize:'1rem', fontWeight:'bold', cursor:'pointer'}}>再来一轮</button>
+                                    <button onClick={startQuizRound} style={{background:'#7A8665', color:'white', border:'none', padding:'12px 30px', borderRadius:'12px', fontSize:'1rem', fontWeight:'bold', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:'10px'}}><Icons.RefreshCw /> 再来一轮</button>
                                 </div>
                             )}
                         </div>
