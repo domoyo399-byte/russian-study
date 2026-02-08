@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>俄语单词自修室</title>
+    <!-- 引入国内稳定的 React 基础库 -->
+    <script src="https://cdn.staticfile.org/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.staticfile.org/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdn.staticfile.org/babel-standalone/7.22.20/babel.min.js"></script>
+    <script src="https://cdn.staticfile.org/lucide/0.263.1/umd/lucide.min.js"></script>
+
+    <style>
+        /* --- 核心样式 (全部内置，断网可用) --- */
+        :root {
+            --bg-color: #F7F5F0;
+            --text-main: #3A3F3A;
+            --text-sub: #9CA3AF;
+            --primary-green: #8A9675;
+            --primary-clay: #BC8A7B;
+            --soft-white: #ECEBE5;
+            --white: #FFFFFF;
+            --border-color: #D9D8D2;
+        }
+
+        body {
+            font-family: "Times New Roman", Times, serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 中文回退字体 */
+        .cn-font { 
+            font-family: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; 
+        }
+
+        /* 布局类 */
+        .app-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 90vh;
+        }
+
+        .header {
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            gap: 15px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            background-color: var(--primary-green);
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 5px var(--soft-white);
+        }
+
+        .title h1 {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        .title p {
+            font-size: 0.7rem;
+            color: var(--primary-green);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 2px 0 0 0;
+        }
+
+        /* 按钮组 */
+        .btn-group {
+            background-color: var(--soft-white);
+            padding: 5px;
+            border-radius: 12px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn {
+            border: none;
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn.active {
+            background-color: var(--white);
+            color: var(--primary-green);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .lesson-nav {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            width: 100%;
+            padding-bottom: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .lesson-btn {
+            min-width: 50px;
+            height: 40px;
+            border: 2px solid var(--border-color);
+            background: var(--white);
+            border-radius: 10px;
+            font-weight: bold;
+            color: var(--text-sub);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .lesson-btn.active {
+            background-color: var(--primary-green);
+            color: var(--white);
+            border-color: var(--primary-green);
+        }
+
+        /* 闪卡核心样式 */
+        .card-container {
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 3/4;
+            position: relative;
+            perspective: 2000px;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        @media (min-width: 600px) {
+            .card-container {
+                aspect-ratio: 16/10;
+                max-width: 600px;
+            }
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .card-front {
+            background-color: var(--white);
+            border: 1px solid var(--soft-white);
+            z-index: 2;
+        }
+
+        .card-back {
+            background-color: var(--primary-green);
+            color: var(--white);
+            transform: rotateY(180deg);
+            z-index: 1;
+            border: 8px solid rgba(255,255,255,0.2);
+        }
+
+        /* 单词显示 */
+        .char-container {
+            display: inline-block;
+            position: relative;
+            padding: 0 2px;
+        }
+
+        .char {
+            font-weight: bold;
+            transition: color 0.3s;
+        }
+
+        .char.root { color: var(--primary-clay); }
+        
+        .stress-mark {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: Arial, sans-serif;
+            font-weight: 900;
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        .text-lg .char { font-size: 3rem; }
+        .text-lg .stress-mark { top: 0.05em; font-size: 0.5em; color: var(--primary-green); }
+
+        .text-md .char { font-size: 1.5rem; }
+        .text-md .stress-mark { top: 0.05em; font-size: 0.6em; color: var(--primary-green); }
+
+        .text-white .char { color: white !important; }
+        .text-white .stress-mark { color: white !important; }
+
+        @media (min-width: 600px) {
+            .text-lg .char { font-size: 4rem; }
+        }
+
+        /* 闪卡背面内容 */
+        .back-content {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .back-content::-webkit-scrollbar { display: none; }
+
+        .cn-mean {
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .info-card {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            padding: 15px;
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 10px;
+        }
+
+        .info-label {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            opacity: 0.8;
+            letter-spacing: 1px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        /* 进度条 */
+        .slider-container {
+            width: 100%;
+            max-width: 400px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-green);
+            cursor: pointer;
+            border: 3px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        /* 连连看与测试面板 */
+        .game-panel {
+            background: var(--white);
+            border-radius: 30px;
+            padding: 30px;
+            width: 100%;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            border: 1px solid var(--soft-white);
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media (min-width: 600px) {
+            .game-grid { grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        }
+
+        .game-btn {
+            background: var(--white);
+            border: 2px solid var(--soft-white);
+            border-radius: 15px;
+            padding: 10px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .game-btn.selected {
+            background: var(--primary-green);
+            color: var(--white);
+            border-color: var(--primary-green);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(138,150,117,0.3);
+        }
+
+        .game-btn.solved {
+            opacity: 0.3;
+            cursor: default;
+            background: #f0f0f0;
+        }
+
+        .quiz-option {
+            height: 70px;
+            border-radius: 15px;
+            border: 2px solid var(--soft-white);
+            background: white;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            color: var(--text-main);
+        }
+        .quiz-option.correct { background: var(--primary-green); color: white; border-color: var(--primary-green); }
+        .quiz-option.wrong { opacity: 0.5; border-color: var(--primary-clay); color: var(--primary-clay); }
+
+        .helper-text {
+            color: var(--text-sub);
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo, useCallback } = React;
+
+        const Icon = ({ name, size = 20, color = 'currentColor' }) => {
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} style={{ width: size, height: size, color: color, verticalAlign: 'middle' }}></i>;
+        };
+
+        // --- 完整修复后的词库 (含关联词原文) ---
+        const vocabulary = [
+          // 第一课
+          { ru: 'дневник', stressIdx: 5, root: 'днев', cn: '日记', lesson: 1, related: 'день (天), дневно́й (白天的)' },
+          { ru: 'завтрак', stressIdx: 1, root: 'завтр', cn: '早饭', lesson: 1, related: 'за́втра (明天)' },
+          { ru: 'кружок', stressIdx: 4, root: 'круж', cn: '小组', lesson: 1, related: 'круг (圆)' },
+          { ru: 'математика', stressIdx: 5, root: 'математ', cn: '数学', lesson: 1, related: 'математи́ческий (数学的)' },
+          { ru: 'соревнование', stressIdx: 8, root: 'ревн', cn: '比赛', lesson: 1, related: 'ревни́вый (嫉妒的/竞争的)' },
+          { ru: 'столовая', stressIdx: 4, root: 'стол', cn: '食堂', lesson: 1, related: 'стол (桌子), насто́льный (桌上的)' },
+          { ru: 'ужин', stressIdx: 0, root: 'уж', cn: '晚饭', lesson: 1, related: 'у́жинать (吃晚饭)' },
+          { ru: 'хоккей', stressIdx: 4, root: 'хокке', cn: '冰球', lesson: 1, related: 'хоккеи́ст (冰球运动员)' },
+          { ru: 'экскурсия', stressIdx: 4, root: 'курс', cn: '参观', lesson: 1, related: 'курс (航向/课程)' },
+          { ru: 'вчера', stressIdx: 4, root: 'вчера', cn: '昨天', lesson: 1, related: 'вчера́шний (昨天的)' },
+          { ru: 'раньше', stressIdx: 1, root: 'ран', cn: '原先', lesson: 1, related: 'ра́но (早)' },
+          { ru: 'сегодня', stressIdx: 3, root: 'сегод', cn: '今天', lesson: 1, related: 'сей (此) + дня (日)' },
+          { ru: 'теперь', stressIdx: 3, root: 'тепер', cn: '现在', lesson: 1, related: 'тепе́решний (现在的)' },
+          { ru: 'весь', stressIdx: 1, root: 'ве', cn: '全部', lesson: 1, related: 'все (大家), всё (一切)' },
+          { ru: 'ничто', stressIdx: 4, root: 'нич', cn: '什么也(不)', lesson: 1, related: 'ничего́ (没什么)' },
+          { ru: 'второй', stressIdx: 4, root: 'втор', cn: '第二', lesson: 1, related: 'вто́рник (周二)' },
+          { ru: 'первый', stressIdx: 1, root: 'перв', cn: '第一', lesson: 1, related: 'впе́рвые (初次)' },
+          { ru: 'после', stressIdx: 1, root: 'посл', cn: '在...之后', lesson: 1, related: 'после́дний (最后的)' },
+          { ru: 'извини', stressIdx: 5, root: 'вин', cn: '对不起', lesson: 1, related: 'вина́ (过错)' },
+          { ru: 'быть', stressIdx: -1, root: 'бы', cn: '是/在', lesson: 1, related: 'бу́ду (将是)', grammar: { type: '未完成体', perfective: '-', conj: 'бу́ду, бу́дешь, бу́дут' } },
+          { ru: 'видеть', stressIdx: 1, root: 'вид', cn: '看见', lesson: 1, related: 'ви́димый (可见的)', grammar: { type: '未完成体', perfective: 'уви́деть (-жу, -дишь)', conj: 'ви́жу, ви́дишь, ви́дят' } },
+          { ru: 'запоминать', stressIdx: 7, root: 'мин', cn: '记住', lesson: 1, related: 'па́мять (记忆)', grammar: { type: '未完成体', perfective: 'запо́мнить (-ню, -нишь)', conj: '-а́ю, -а́ешь, -а́ют' } },
+          { ru: 'искать', stressIdx: 3, root: 'иск', cn: '寻找', lesson: 1, related: 'по́иск (搜索)', grammar: { type: '未完成体', perfective: 'найти́ (найду́)', conj: 'ищу́, и́щешь, и́щут' } },
+          { ru: 'петь', stressIdx: 1, root: 'пе', cn: '唱歌', lesson: 1, related: 'пе́сня (歌曲)', grammar: { type: '未完成体', perfective: 'спеть (спою́)', conj: 'пою́, поёшь, пою́т' } },
+          { ru: 'помнить', stressIdx: 1, root: 'помн', cn: '记得', lesson: 1, related: 'па́мять (记忆)', grammar: { type: '未完成体', perfective: '-', conj: '-ню, -нишь, -нят' } },
+          { ru: 'танцевать', stressIdx: 6, root: 'танц', cn: '跳舞', lesson: 1, related: 'та́нец (舞蹈)', grammar: { type: '未完成体', perfective: 'станцева́ть', conj: 'танцу́ю, -цу́ешь' } },
+
+          // Lesson 2 (已修复 Related 字段)
+          { ru: 'год', stressIdx: -1, root: 'год', cn: '年', lesson: 2, related: 'годово́й (年度的)' },
+          { ru: 'жизнь', stressIdx: 1, root: 'жи', cn: '生活', lesson: 2, related: 'жить (生活/居住)' },
+          { ru: 'месяц', stressIdx: 1, root: 'мес', cn: '月', lesson: 2, related: 'ежеме́сячно (每月)' },
+          { ru: 'минута', stressIdx: 3, root: 'минут', cn: '分钟', lesson: 2, related: 'мину́тный (分钟的)' },
+          { ru: 'неделя', stressIdx: 3, root: 'недел', cn: '星期', lesson: 2, related: 'понеде́льник (周一)' },
+          { ru: 'половина', stressIdx: 5, root: 'пол', cn: '一半', lesson: 2, related: 'полчаса́ (半小时)' },
+          { ru: 'полчаса', stressIdx: 6, root: 'пол', cn: '半小时', lesson: 2, related: 'полови́на (一半)' },
+          { ru: 'роман', stressIdx: 3, root: 'роман', cn: '小说', lesson: 2, related: 'романи́ст (小说家)' },
+          { ru: 'университет', stressIdx: 10, root: 'универ', cn: '大学', lesson: 2, related: 'универса́льный (通用的)' },
+          { ru: 'час', stressIdx: 1, root: 'час', cn: '小时', lesson: 2, related: 'часы́ (表)' },
+          { ru: 'длинный', stressIdx: 2, root: 'длин', cn: '长的', lesson: 2, related: 'длина́ (长度)' },
+          { ru: 'долгий', stressIdx: 1, root: 'долг', cn: '长久的', lesson: 2, related: 'до́лго (很久)' },
+          { ru: 'нормальный', stressIdx: 4, root: 'норм', cn: '正常的', lesson: 2, related: 'но́рма (规范)' },
+          { ru: 'счастливый', stressIdx: 6, root: 'счаст', cn: '幸福的', lesson: 2, related: 'сча́стье (幸福)' },
+          { ru: 'трудный', stressIdx: 2, root: 'труд', cn: '困难的', lesson: 2, related: 'труд (劳动)' },
+          { ru: 'наконец', stressIdx: 5, root: 'кон', cn: '最终', lesson: 2, related: 'коне́ц (结束)' },
+          { ru: 'почти', stressIdx: 4, root: 'почт', cn: '几乎', lesson: 2, related: 'почти́тельный (恭敬的)' },
+          { ru: 'всё', stressIdx: -1, root: 'вс', cn: '一切', lesson: 2, related: 'весь (全部)' },
+          { ru: 'заниматься', stressIdx: 5, root: 'ним', cn: '学习', lesson: 2, related: 'заня́тие (课)', grammar: { type: '未完成体', perfective: 'заня́ться', conj: '-а́юсь, -а́ешься' } },
+          { ru: 'проверять', stressIdx: 7, root: 'вер', cn: '检查', lesson: 2, related: 'прове́рка (核实)', grammar: { type: '未完成体', perfective: 'прове́рить', conj: '-я́ю, -я́ешь' } },
+          { ru: 'решать', stressIdx: 4, root: 'реш', cn: '解决', lesson: 2, related: 'реше́ние (决定)', grammar: { type: '未完成体', perfective: 'реши́ть (-шу́)', conj: '-а́ю, -а́ешь' } },
+          { ru: 'строить', stressIdx: 2, root: 'стро', cn: '建设', lesson: 2, related: 'стро́йка (工地)', grammar: { type: '未完成体', perfective: 'постро́ить', conj: '-о́ю, -о́ишь' } },
+          { ru: 'уставать', stressIdx: 6, root: 'ста', cn: '疲劳', lesson: 2, related: 'уста́лость (疲劳)', grammar: { type: '未完成体', perfective: 'уста́ть (-а́ну)', conj: 'устаю́, -аёшь' } },
+          { ru: 'хотеть', stressIdx: 4, root: 'хот', cn: '想要', lesson: 2, related: 'хоте́ние (意愿)', grammar: { type: '未完成体', perfective: 'захоте́ть', conj: 'хочу́, хо́чешь' } },
+
+          // Lesson 3 (已修复 Related 字段)
+          { ru: 'весна', stressIdx: 4, root: 'весн', cn: '春天', lesson: 3, related: 'весе́нний (春天的)' },
+          { ru: 'зима', stressIdx: 3, root: 'зим', cn: '冬天', lesson: 3, related: 'зи́мний (冬天的)' },
+          { ru: 'каникулы', stressIdx: 3, root: 'каник', cn: '假期', lesson: 3, related: 'каникуля́рный (假期的)' },
+          { ru: 'лето', stressIdx: 1, root: 'лет', cn: '夏天', lesson: 3, related: 'ле́тний (夏天的)' },
+          { ru: 'осень', stressIdx: 1, root: 'осень', cn: '秋天', lesson: 3, related: 'осе́нний (秋天的)' },
+          { ru: 'физика', stressIdx: 1, root: 'физ', cn: '物理', lesson: 3, related: 'фи́зик (物理学家)' },
+          { ru: 'понедельник', stressIdx: 5, root: 'недель', cn: '周一', lesson: 3, related: 'неде́ля (星期)' },
+          { ru: 'вторник', stressIdx: 2, root: 'втор', cn: '周二', lesson: 3, related: 'второ́й (第二)' },
+          { ru: 'среда', stressIdx: 4, root: 'сред', cn: '周三', lesson: 3, related: 'сре́дний (中间的)' },
+          { ru: 'четверг', stressIdx: 6, root: 'четвер', cn: '周四', lesson: 3, related: 'четвёртый (第四)' },
+          { ru: 'пятница', stressIdx: 2, root: 'пят', cn: '周五', lesson: 3, related: 'пя́тый (第五)' },
+          { ru: 'суббота', stressIdx: 4, root: 'суббот', cn: '周六', lesson: 3, related: 'суббо́тний (周六的)' },
+          { ru: 'воскресенье', stressIdx: 8, root: 'воскрес', cn: '周日', lesson: 3, related: 'воскреса́ть (复活)' },
+          { ru: 'весной', stressIdx: 4, root: 'весн', cn: '(在)春天', lesson: 3, related: 'весна́ (春天)' },
+          { ru: 'зимой', stressIdx: 3, root: 'зим', cn: '(在)冬天', lesson: 3, related: 'зима́ (冬天)' },
+          { ru: 'летом', stressIdx: 1, root: 'лет', cn: '(在)夏天', lesson: 3, related: 'ле́то (夏天)' },
+          { ru: 'осенью', stressIdx: 1, root: 'осень', cn: '(在)秋天', lesson: 3, related: 'о́сень (秋天)' },
+          { ru: 'завтра', stressIdx: 1, root: 'завтра', cn: '明天', lesson: 3, related: 'за́втрак (早饭)' },
+          { ru: 'послезавтра', stressIdx: 6, root: 'завтра', cn: '后天', lesson: 3, related: 'за́втра (明天)' },
+          { ru: 'наизусть', stressIdx: 5, root: 'уст', cn: '背熟', lesson: 3, related: 'уста́ (口/嘴)' },
+          { ru: 'скоро', stressIdx: 2, root: 'скор', cn: '很快', lesson: 3, related: 'ско́рость (速度)' },
+          { ru: 'через', stressIdx: 1, root: 'чер', cn: '经过', lesson: 3, related: 'черезме́рный (过度的)' },
+          { ru: 'до встречи', stressIdx: 7, root: 'встреч', cn: '再见', lesson: 3, related: 'встре́ча (见面)' },
+          { ru: 'слышать', stressIdx: 2, root: 'слых', cn: '听见', lesson: 3, related: 'слух (听力)', grammar: { type: '未完成体', perfective: 'услы́шать', conj: 'слы́шу, слы́шишь' } },
+          { ru: 'собирать', stressIdx: 5, root: 'бир', cn: '收集', lesson: 3, related: 'собра́ние (会议)', grammar: { type: '未完成体', perfective: 'собра́ть', conj: '-а́ю, -а́ешь' } },
+        ];
+
+        // --- 组件 ---
+        
+        // 单词渲染
+        const WordDisplay = ({ word, root, stressIdx, size = 'lg', isWhite = false }) => {
+            if (!word) return null;
+            return (
+                <div className={`word-display text-${size} ${isWhite ? 'text-white' : ''}`}>
+                    {word.split('').map((char, idx) => {
+                        const isRoot = word.indexOf(root) !== -1 && idx >= word.indexOf(root) && idx < word.indexOf(root) + root.length;
+                        const hasStress = idx === stressIdx;
+                        let classes = 'char';
+                        if (!isWhite && isRoot) classes += ' root';
+                        return (
+                            <span key={idx} className="char-container">
+                                <span className={classes}>{char}</span>
+                                {hasStress && <span className="stress-mark">́</span>}
+                            </span>
+                        );
+                    })}
+                </div>
+            );
+        };
+
+        // 变位渲染
+        const ConjDisplay = ({ text, isWhite = false }) => {
+            if (!text) return null;
+            const parts = [];
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                if (char === ' ') { parts.push(<span key={i} style={{width:'5px'}}></span>); continue; }
+                const isStress = text[i+1] === '\u0301' || text[i+1] === '́'; 
+                if (isStress) {
+                    parts.push(
+                        <span key={i} style={{position:'relative', display:'inline-block'}}>
+                            {char}
+                            <span style={{position:'absolute', top:'0.05em', left:'50%', transform:'translateX(-50%)', fontSize:'0.6em', color: isWhite?'white':'#8A9675', fontWeight:900}}>́</span>
+                        </span>
+                    );
+                    i++; 
+                } else { parts.push(<span key={i}>{char}</span>); }
+            }
+            return <div style={{display:'flex', flexWrap:'wrap', justifyContent:'center', fontStyle:'italic'}}>{parts}</div>;
+        };
+
+        const App = () => {
+            const [activeLesson, setActiveLesson] = useState(1);
+            const [mode, setMode] = useState('flashcard');
+            const [currentIndex, setCurrentIndex] = useState(0);
+            const [isFlipped, setIsFlipped] = useState(false);
+            
+            // Match state
+            const [matchItems, setMatchItems] = useState([]);
+            const [selected, setSelected] = useState([]);
+            const [solved, setSolved] = useState([]);
+            
+            // Quiz state
+            const [quizQueue, setQuizQueue] = useState([]);
+            const [quizIndex, setQuizIndex] = useState(0);
+            const [quizQuestion, setQuizQuestion] = useState(null);
+            const [quizOptions, setQuizOptions] = useState([]);
+            const [quizAnswered, setQuizAnswered] = useState(false);
+            const [quizCorrect, setQuizCorrect] = useState(false);
+            const [quizScore, setQuizScore] = useState(0);
+            const [quizStats, setQuizStats] = useState({ correct: 0, total: 0 });
+            const [quizFinished, setQuizFinished] = useState(false);
+
+            const currentVocab = useMemo(() => {
+                const list = activeLesson === 0 ? vocabulary : vocabulary.filter(v => v.lesson === activeLesson);
+                return list.length > 0 ? list : [vocabulary[0]];
+            }, [activeLesson]);
+
+            // Reset
+            useEffect(() => {
+                setCurrentIndex(0); setIsFlipped(false);
+                setQuizFinished(false); setQuizQueue([]); setQuizScore(0);
+                setQuizStats({ correct: 0, total: 0 });
+            }, [activeLesson]);
+
+            // Logic Init
+            const initMatch = () => {
+                const subset = [...currentVocab].sort(() => 0.5 - Math.random()).slice(0, 6);
+                const items = [
+                    ...subset.map(v => ({ ...v, type: 'ru', id: v.ru })),
+                    ...subset.map(v => ({ ...v, type: 'cn', id: v.ru }))
+                ].sort(() => 0.5 - Math.random());
+                setMatchItems(items); setSelected([]); setSolved([]);
+            };
+
+            const startQuiz = useCallback(() => {
+                const queue = [...currentVocab].sort(() => 0.5 - Math.random());
+                setQuizQueue(queue); setQuizIndex(0); setQuizScore(0);
+                setQuizStats({ correct: 0, total: 0 }); setQuizFinished(false);
+                generateQuestion(queue[0]);
+            }, [currentVocab]);
+
+            const generateQuestion = (target) => {
+                let distractors = vocabulary.filter(w => w.ru !== target.ru).sort(() => 0.5 - Math.random()).slice(0, 3);
+                const dir = Math.random() > 0.5 ? 'ru-cn' : 'cn-ru';
+                const opts = [target, ...distractors].sort(() => 0.5 - Math.random());
+                setQuizQuestion({ ...target, dir }); setQuizOptions(opts); setQuizAnswered(false);
+            };
+
+            const nextQuiz = () => {
+                const next = quizIndex + 1;
+                if (next >= quizQueue.length) setQuizFinished(true);
+                else { setQuizIndex(next); generateQuestion(quizQueue[next]); }
+            };
+
+            useEffect(() => {
+                if (mode === 'match') initMatch();
+                if (mode === 'quiz' && quizQueue.length === 0 && !quizFinished) startQuiz();
+            }, [mode, activeLesson, startQuiz]);
+
+            const handleMatch = (item) => {
+                if (solved.includes(item.id) || selected.includes(item)) return;
+                const newSel = [...selected, item]; setSelected(newSel);
+                if (newSel.length === 2) {
+                    if (newSel[0].id === newSel[1].id && newSel[0].type !== newSel[1].type) setSolved([...solved, newSel[0].id]);
+                    setTimeout(() => setSelected([]), 400);
+                }
+            };
+
+            const handleQuiz = (opt) => {
+                if (quizAnswered) return;
+                setQuizAnswered(true);
+                const isCorrect = opt.ru === quizQuestion.ru;
+                setQuizStats(p => ({ correct: p.correct + (isCorrect ? 1 : 0), total: p.total + 1 }));
+                if (isCorrect) {
+                    setQuizCorrect(true); setQuizScore(s => s + 10);
+                    setTimeout(nextQuiz, 1000);
+                } else setQuizCorrect(false);
+            };
+
+            const accuracy = quizStats.total > 0 ? Math.round((quizStats.correct / quizStats.total) * 100) : 0;
+
+            return (
+                <div className="app-wrapper">
+                    <header className="header">
+                        <div className="brand">
+                            <div className="logo"><Icon name="book-open" size={20} /></div>
+                            <div className="title"><h1>俄语单词自修室</h1><p>Morandi Style</p></div>
+                        </div>
+                        <div className="btn-group">
+                            {['flashcard', 'match', 'quiz'].map(m => (
+                                <button key={m} onClick={() => setMode(m)} className={`btn ${mode === m ? 'active' : ''}`}>
+                                    {m === 'flashcard' ? '闪卡' : m === 'match' ? '连连看' : '测试'}
+                                </button>
+                            ))}
+                        </div>
+                    </header>
+
+                    <div className="lesson-nav">
+                        {[1, 2, 3, 0].map(n => (
+                            <button key={n} onClick={() => setActiveLesson(n)} className={`lesson-btn ${activeLesson === n ? 'active' : ''}`}>
+                                {n === 0 ? '全部' : `L${n}`}
+                            </button>
+                        ))}
+                    </div>
+
+                    {mode === 'flashcard' && (
+                        <div style={{width:'100%', display:'flex', flexDirection:'column', alignItems:'center'}}>
+                            <div className="card-container" onClick={() => setIsFlipped(!isFlipped)}>
+                                <div className={`card-inner ${isFlipped ? 'flipped' : ''}`}>
+                                    <div className="card-face card-front">
+                                        <div style={{position:'absolute', top:'20px', left:'20px', color:'#8A9675', fontWeight:'bold', fontSize:'0.8rem', display:'flex', gap:'5px', alignItems:'center'}}>
+                                            <Icon name="layers" size={14} /> Lesson {currentVocab[currentIndex]?.lesson}
+                                        </div>
+                                        <WordDisplay word={currentVocab[currentIndex]?.ru} root={currentVocab[currentIndex]?.root} stressIdx={currentVocab[currentIndex]?.stressIdx} size="lg" />
+                                        {currentVocab[currentIndex]?.grammar && (
+                                            <div style={{marginTop:'20px', fontSize:'1.2rem', color:'#8A9675'}}>
+                                                <ConjDisplay text={currentVocab[currentIndex].grammar.conj} />
+                                            </div>
+                                        )}
+                                        <div style={{position:'absolute', bottom:'20px', color:'#D9D8D2', fontSize:'0.7rem', fontWeight:'bold', letterSpacing:'2px'}}>CLICK TO FLIP</div>
+                                    </div>
+                                    <div className="card-back">
+                                        <div className="back-content">
+                                            <div className="cn-mean cn-font">{currentVocab[currentIndex]?.cn}</div>
+                                            {currentVocab[currentIndex]?.grammar && (
+                                                <div className="info-card">
+                                                    <div className="info-label">GRAMMAR</div>
+                                                    <div style={{fontSize:'0.9rem'}}>
+                                                        <div style={{fontWeight:'bold'}}>{currentVocab[currentIndex].grammar.type}</div>
+                                                        <div>完成体: {currentVocab[currentIndex].grammar.perfective}</div>
+                                                        <div style={{marginTop:'5px', fontSize:'0.85em', opacity:0.9}}>
+                                                            <ConjDisplay text={currentVocab[currentIndex].grammar.conj} isWhite={true} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className="info-card">
+                                                <div className="info-label">ETYMOLOGY</div>
+                                                <div style={{fontSize:'0.9rem'}}>
+                                                    <div>词根: <strong>"{currentVocab[currentIndex]?.root}"</strong></div>
+                                                    <div className="cn-font" style={{fontSize:'0.85rem', marginTop:'3px'}}>关联: {currentVocab[currentIndex]?.related}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="slider-container">
+                                <input type="range" min="0" max={currentVocab.length - 1} value={currentIndex} onChange={e => {setCurrentIndex(parseInt(e.target.value)); setIsFlipped(false);}} className="slider" />
+                                <div style={{marginTop:'10px', fontWeight:'bold', color:'#3A3F3A'}}>{currentIndex + 1} / {currentVocab.length}</div>
+                            </div>
+                        </div>
+                    )}
+
+                    {mode === 'match' && (
+                        <div className="game-panel">
+                            <div style={{display:'flex', justifyContent:'space-between', marginBottom:'20px', alignItems:'flex-end'}}>
+                                <div><span className="helper-text">MATCHING</span><div style={{fontSize:'1.5rem', fontWeight:'bold'}}>{solved.length} / 6</div></div>
+                                <button onClick={initMatch} style={{border:'none', background:'transparent', color:'#8A9675', cursor:'pointer'}}><Icon name="refresh-cw" size={24} /></button>
+                            </div>
+                            <div className="game-grid">
+                                {matchItems.map((item, idx) => (
+                                    <button key={idx} disabled={solved.includes(item.id)} onClick={() => handleMatch(item)} className={`game-btn ${selected.includes(item) ? 'selected' : ''} ${solved.includes(item.id) ? 'solved' : ''}`}>
+                                        {solved.includes(item.id) ? <Icon name="check" /> : (item.type === 'ru' ? <WordDisplay word={item.ru} root={item.root} stressIdx={item.stressIdx} size="md" /> : <span className="cn-font">{item.cn}</span>)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {mode === 'quiz' && (
+                        <div className="game-panel" style={{display:'flex', flexDirection:'column', justifyContent:'center', textAlign:'center', minHeight:'400px'}}>
+                            {!quizFinished && quizQuestion ? (
+                                <>
+                                    <div style={{display:'flex', justifyContent:'space-between', marginBottom:'30px'}}>
+                                        <div style={{textAlign:'left'}}><span style={{fontSize:'2rem', fontWeight:'bold'}}>{quizScore}</span><span className="helper-text" style={{display:'block'}}>SCORE</span></div>
+                                        <div style={{textAlign:'right', fontSize:'0.8rem', color:'#8A9675', fontWeight:'bold'}}><div>进度: {quizIndex + 1} / {quizQueue.length}</div><div>正确率: {accuracy}%</div></div>
+                                    </div>
+                                    <div style={{marginBottom:'30px', minHeight:'80px', display:'flex', alignItems:'center', justifyContent:'center'}}>
+                                        {quizQuestion.dir === 'ru-cn' ? <WordDisplay word={quizQuestion.ru} root={quizQuestion.root} stressIdx={quizQuestion.stressIdx} size="lg" /> : <h2 className="cn-font" style={{fontSize:'2rem', fontWeight:'bold'}}>{quizQuestion.cn}</h2>}
+                                    </div>
+                                    <div style={{display:'grid', gridTemplateColumns:'1fr', gap:'10px'}}>
+                                        {quizOptions.map((opt, idx) => {
+                                            const isCorrect = opt.ru === quizQuestion.ru;
+                                            let statusClass = '';
+                                            if (quizAnswered) statusClass = isCorrect ? 'correct' : (opt === quizQuestion ? 'correct' : 'wrong');
+                                            return (
+                                                <button key={idx} disabled={quizAnswered} onClick={() => handleQuiz(opt)} className={`quiz-option ${statusClass}`}>
+                                                    {quizQuestion.dir === 'ru-cn' ? <span className="cn-font">{opt.cn}</span> : <span style={{fontFamily:'"Times New Roman", serif'}}>{opt.ru}</span>}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                    <div style={{marginTop:'20px', height:'20px', fontWeight:'bold', color:'#8A9675'}}>
+                                        {quizAnswered && (quizCorrect ? "🎉 正确!" : <button onClick={nextQuiz} style={{background:'none', border:'none', textDecoration:'underline', color:'#BC8A7B', cursor:'pointer'}}>跳过 ➔</button>)}
+                                    </div>
+                                </>
+                            ) : (
+                                <div>
+                                    <Icon name="award" size={60} color="#8A9675" />
+                                    <h2 className="cn-font" style={{fontSize:'1.5rem', fontWeight:'bold', margin:'20px 0'}}>测试完成</h2>
+                                    <div style={{display:'flex', justifyContent:'space-around', background:'#F7F5F0', padding:'20px', borderRadius:'15px', marginBottom:'30px'}}>
+                                        <div><span className="helper-text">Score</span><div style={{fontSize:'1.8rem', fontWeight:'bold', color:'#8A9675'}}>{quizScore}</div></div>
+                                        <div><span className="helper-text">Accuracy</span><div style={{fontSize:'1.8rem', fontWeight:'bold', color:'#8A9675'}}>{accuracy}%</div></div>
+                                    </div>
+                                    <button onClick={startQuiz} style={{background:'#8A9675', color:'white', border:'none', padding:'12px 30px', borderRadius:'12px', fontSize:'1rem', fontWeight:'bold', cursor:'pointer'}}>再来一轮</button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
